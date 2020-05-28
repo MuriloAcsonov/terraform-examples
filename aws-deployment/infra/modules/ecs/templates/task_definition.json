@@ -5,10 +5,12 @@
     "portMappings": [
       {
         "containerPort": 8000,
-        "hostPort": 8000
+        "hostPort": 8000,
+        "protocol": "tcp"
       }
     ],
     "memory": 128,
+    "cpu": 128,
     "networkMode": "awsvpc",
     "logConfiguration": {
       "logDriver": "awslogs",
@@ -17,7 +19,12 @@
         "awslogs-region": "${region}",
         "awslogs-stream-prefix": "${app_name}"
       },
-      "environment": []
+      "environment": [
+        {
+        "name": "PORT",
+        "value": "8000"
+        }
+      ]
     }
   }
 ]

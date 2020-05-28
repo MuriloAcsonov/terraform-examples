@@ -10,4 +10,4 @@ RUN pip install -r requirements.txt
 
 COPY app/api.py /usr/src/app/
 
-CMD ["gunicorn", "--log-level=debug", "--bind=0.0.0.0:8000", "api:app"]
+CMD ["gunicorn", "--log-level=debug", "--workers=1", "--forwarded-allow-ips=*", "--bind=0.0.0.0:8000", "api:app"]

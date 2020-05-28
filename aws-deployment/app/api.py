@@ -30,7 +30,7 @@ def api_comment_new():
             'status': 'SUCCESS',
             'message': message,
             }
-    return jsonify(response)
+    return jsonify(response), 200
 
 
 @app.route('/api/comment/list/<content_id>')
@@ -38,7 +38,7 @@ def api_comment_list(content_id):
     content_id = '{}'.format(content_id)
 
     if content_id in comments:
-        return jsonify(comments[content_id])
+        return jsonify(comments[content_id]), 200
     else:
         message = 'content_id {} not found'.format(content_id)
         response = {

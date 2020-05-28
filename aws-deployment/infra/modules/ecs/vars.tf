@@ -3,7 +3,7 @@ variable "app_name" {
 }
 
 variable "environment" {
-  description = "Env to laundh service, etc"
+  description = "Env to launch service, etc"
 }
 
 variable "vpc_id" {

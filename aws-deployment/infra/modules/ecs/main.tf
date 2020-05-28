@@ -46,18 +46,14 @@ resource "aws_alb_target_group" "alb_target_group" {
   lifecycle {
     create_before_destroy = true
   }
+
+  depends_on = [aws_alb.alb]
+
 }
 
 resource "aws_security_group" "inbound_sg" {
   name        = "${var.app_name}-${var.environment}-inbound-sg"
   vpc_id      = var.vpc_id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   ingress {
     from_port   = 8000
@@ -87,6 +83,8 @@ resource "aws_security_group" "inbound_sg" {
 
 resource "aws_alb" "alb" {
   name            = "${var.app_name}-alb-${var.environment}"
+  internal        = false
+  load_balancer_type = "application"
   subnets         = var.public_subnet_ids
   security_groups = [aws_security_group.inbound_sg.id]
 
@@ -153,29 +151,6 @@ resource "aws_iam_role_policy" "ecs_execution_role_policy" {
   role   = aws_iam_role.ecs_execution_role.id
 }
 
-resource "aws_security_group" "ecs_service_sg" {
-  vpc_id      = var.vpc_id
-  name        = "${var.environment}-ecs-service-sg"
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 8
-    to_port     = 0
-    protocol    = "icmp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name        = "${var.environment}-ecs-service-sg"
-  }
-}
-
 data "aws_ecs_task_definition" "data_td" {
   task_definition = aws_ecs_task_definition.task_definition.family
   depends_on = [aws_ecs_task_definition.task_definition]
@@ -184,13 +159,14 @@ data "aws_ecs_task_definition" "data_td" {
 resource "aws_ecs_service" "ecs_service" {
   name            = "${var.app_name}-${var.environment}"
   task_definition = "${aws_ecs_task_definition.task_definition.family}:${max("${aws_ecs_task_definition.task_definition.revision}", "${data.aws_ecs_task_definition.data_td.revision}")}"
-  desired_count   = 2
+  desired_count   = 1
   launch_type     = "FARGATE"
   cluster         = aws_ecs_cluster.cluster.id
 
   network_configuration {
-    security_groups = concat(var.security_groups_ids, aws_security_group.ecs_service_sg.*.id)
+    security_groups = concat(var.security_groups_ids, aws_security_group.inbound_sg.*.id)
     subnets         = var.subnets_ids
+    assign_public_ip = true
   }
 
   load_balancer {
@@ -199,7 +175,7 @@ resource "aws_ecs_service" "ecs_service" {
     container_port   = "8000"
   }
 
-  depends_on = [aws_alb_target_group.alb_target_group, aws_iam_role_policy.ecs_service_role_policy]
+  depends_on = [aws_alb_target_group.alb_target_group, aws_iam_role_policy.ecs_service_role_policy, aws_alb_target_group.alb_target_group]
 }
 
 resource "aws_iam_role" "ecs_autoscale_role" {
@@ -218,7 +194,7 @@ resource "aws_appautoscaling_target" "target" {
   scalable_dimension = "ecs:service:DesiredCount"
   role_arn           = aws_iam_role.ecs_autoscale_role.arn
   min_capacity       = 1
-  max_capacity       = 3
+  max_capacity       = 2
 }
 
 resource "aws_appautoscaling_policy" "up" {
