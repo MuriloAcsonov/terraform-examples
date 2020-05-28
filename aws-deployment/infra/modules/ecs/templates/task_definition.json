@@ -1,0 +1,23 @@
+[
+  {
+    "name": "${app_name}",
+    "image": "${image}",
+    "portMappings": [
+      {
+        "containerPort": 8000,
+        "hostPort": 8000
+      }
+    ],
+    "memory": 128,
+    "networkMode": "awsvpc",
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "${log_group}",
+        "awslogs-region": "${region}",
+        "awslogs-stream-prefix": "${app_name}"
+      },
+      "environment": []
+    }
+  }
+]
