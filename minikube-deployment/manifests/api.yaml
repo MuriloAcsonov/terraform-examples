@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: comments-api
+spec:
+  type: NodePort
+  ports:
+    - port: 8000
+      targetPort: 8000
+      nodePort: 30008
+  selector:
+    app: comments-api
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: comments-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: comments-api
+  template:
+    metadata:
+      labels:
+        app: comments-api
+    spec:
+      containers:
+        - name: comments-api
+          image: docker.io/library/comments-api:0.001
+          env:
+            - name: DATABASE_URL
+              value: "postgresql://user:password@postgres:5432/comments"
+          ports:
+            - containerPort: 8000
